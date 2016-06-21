@@ -56,6 +56,7 @@ void main() {
 	
 
 	vec3 normal = normalize(texture2D( u_normalTex, v_texcoord ).xyz);
+	vec3 abNormal = texture2D(u_normalTex, v_texcoord).xyz;
 	vec4 color = texture2D( u_colorTex, v_texcoord );
 	float depth = texture2D( u_depthTex, v_texcoord ).r;
 
@@ -86,6 +87,6 @@ void main() {
 	// gl_FragData[0] = vec4((biasedLightSpacePos.xy * illumination), fragmentDepth, 1);
 	// gl_FragData[0] = vec4(vec3(fragmentDepth), 1);
 	// gl_FragData[0] = vec4(normalize(position.rgb), 1);
-    // gl_FragData[0] = vec4(normalize(testPos.rgb), 1 );
     gl_FragData[0] = vec4(color.rgb * illumination, color.a);
+    // gl_FragData[0] = vec4(normal.xyz, 1.0);
 }

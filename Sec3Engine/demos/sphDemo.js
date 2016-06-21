@@ -6,11 +6,11 @@ var demo = (function () {
     demo.selectedLight = 0;
     demo.MAX_LIGHTS = 8;
     demo.MAX_CASCADES = 6;
-    demo.AMBIENT_INTENSITY = 0.1;
+    demo.AMBIENT_INTENSITY = 0.05;
 
     demo.texToDisplay = 2;
     demo.secondPass;
-    demo.secondPass = "buildShadowMapProg";
+    // demo.secondPass = "buildShadowMapProg";
 
     demo.nearSlope = -6.6;
     demo.nearIntercept = 1.39;
@@ -47,10 +47,24 @@ var scene;
 var sph;
 var stats;
 
+var camera; 
+
+var quad_vertexVBO;
+var quad_indexVBO;
+var quad_texcoordVBO;
+
 var model_vertexVBOs = [];   //buffer object for loaded model (vertex)
 var model_indexVBOs = [];    //buffer object for loaded model (index)
 var model_normalVBOs = [];   //buffer object for loaded model (normal)
 var model_texcoordVBOs = []; //buffer object for loaded model (texture)
+
+var fillGProg;           //shader program passing data to FBO
+var bufferRenderProg;     //shader program showing the FBO buffers
+var showShadowMap;
+
+var fbo;    //Framebuffer object storing data for postprocessing effects
+var lowResFBO; //Framebuffer object for storing unprocessed image
+var workingFBO;
 
 //--------------------------------------------FUNCTIONS:
 var myRenderLoop = function() {
@@ -93,12 +107,9 @@ var moveSphere = function(screenX, screenY){
 };
 
 var myRender = function() {
-    demo.secondPass == "buildShadowMapProg"
-    // handle mouse interaction
-    if(interactor.button == 0 && interactor.dragging && ! interactor.alt ) {
-        moveSphere( interactor.x * 0.8, interactor.y * 0.8 );
+    if(SEC3.isWaiting){
+        return;
     }
-
     // populate collision buffers
     gl.enable( gl.CULL_FACE );
     gl.cullFace( gl.BACK );
@@ -107,6 +118,10 @@ var myRender = function() {
         SEC3.renderer.fillGPass( sph.projectors[i].gBuffer, sph.projectors[i] );
     }
 
+    // gl.clearColor( 0.4, 0.4, 0.4, 1.0);
+    gl.enable( gl.DEPTH_TEST )
+    gl.depthFunc(gl.LESS);
+    
     SEC3.renderer.updateShadowMaps(scene);
 
     // fill g buffer with all scene geometry besides particles
@@ -116,16 +131,6 @@ var myRender = function() {
     SEC3.renderer.deferredRender( scene, scene.gBuffer );
 
     // render all scene geometry besides particles
-
-    if ( demo.secondPass === "buildShadowMapProg") {
-        // SEC3.postFx.finalPass(light.cascadeFramebuffers[demo.cascadeToDisplay].depthTexture());
-        SEC3.postFx.finalPass( lightFBO.texture(0));
-        // SEC3.postFx.writeDepth(scene.lights[0].cascadeFramebuffers[0].depthTexture());
-    }
-    else {
-        // SEC3.postFx.finalPass( scene.gBuffer.texture(2) );
-        SEC3.postFx.finalPass( finalFBO.texture(0) );
-    }
 
     // step simulation
     if( ! sph.paused ) {
@@ -148,8 +153,9 @@ var myRender = function() {
     }
     //otherwise draw particles
     else {
-        sph.draw( scene, null );
+        // sph.draw( scene, finalFBO);
     }
+    SEC3.postFx.finalPass( finalFBO.texture(0) );
     
 };
 
@@ -187,7 +193,7 @@ var initLight = function() {
     // nextLight.setAzimuth( 45.0 );    
     nextLight.setElevation( -30.0 );
     nextLight.setPerspective( 60, 1, 0.2, 20.0 );
-    nextLight.setupCascades( 1, 512, gl, scene );
+    nextLight.setupCascades( 1, 1024, gl, scene );
     scene.addLight(nextLight);
 }
 
@@ -244,7 +250,7 @@ var initFBOs = function() {
     }
 
     shadowFBO = SEC3.createFBO();
-    if (! shadowFBO.initialize( gl, 512, 512, 2 )) {
+    if (! shadowFBO.initialize( gl, 1024, 1024, 2 )) {
         console.log( "shadowFBO initialization failed.");
         return;
     }
@@ -285,6 +291,7 @@ var initGL = function(canvasId, messageId) {
     gl.viewportWidth = canvas.width;
     gl.viewportHeight = canvas.height;
     gl.clearColor( 0.4, 0.4, 0.4, 1.0);
+    gl.enable( gl.DEPTH_TEST )
     gl.depthFunc(gl.LESS);
 }
 var initParticleSystem = function() {
@@ -380,7 +387,8 @@ var loadObjects = function() {
     // objLoader.loadFromFile( gl, 'Sec3Engine/models/thickPlane/terrain4.obj', 'Sec3Engine/models/thickPlane/terrain4.mtl');
     // objLoader.loadFromFile( gl, 'Sec3Engine/models/alien/decimated5.obj', 'Sec3Engine/models/alien/decimated5.mtl');
     // objLoader.loadFromFile( gl, 'Sec3Engine/models/Shark/Shark.obj', 'Sec3Engine/models/Shark/Shark.mtl');
-    objLoader.loadFromFile( gl, 'Sec3Engine/models/bigSphere/sphere.obj', 'Sec3Engine/models/bigSphere/sphere.mtl');
+    objLoader.loadFromFile( gl, 'Sec3Engine/models/bigSphere/concreteSphere.obj', 'Sec3Engine/models/bigSphere/concreteSphere.mtl');
+    // objLoader.loadFromFile( gl, 'Sec3Engine/models/dabrovic-sponza/sponza3.obj', 'Sec3Engine/models/dabrovic-sponza/sponza.mtl');
     
         
     //Register a callback function that extracts vertex and normal 
@@ -404,7 +412,6 @@ var loadObjects = function() {
             gl.bindBuffer( gl.ARRAY_BUFFER, null );
 
             if (objLoader.texture(i)) {
-
                 model_texcoordVBOs[i].texture = objLoader.texture(i);    
             }
             

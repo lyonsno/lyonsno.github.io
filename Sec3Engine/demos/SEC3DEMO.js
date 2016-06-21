@@ -166,6 +166,7 @@ var myRender = function() {
     if ( demo.secondPass === "bufferRenderProg") {
         particleSystem.draw(light);
         SEC3.postFx.finalPass(finalFBO.texture(0));
+        // SEC3.postFx.finalPass(SEC3.gBuffer.texture(0));        
     }
     else if ( demo.secondPass === "blurProg") {
         particleSystem.draw(light);
