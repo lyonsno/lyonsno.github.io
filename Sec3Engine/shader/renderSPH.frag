@@ -12,7 +12,10 @@ void main(void) {
 	float camDistance = length( worldPosition - u_camPos );
 	vec2 uv = gl_FragCoord.xy / u_screenDims;
 	float depth = texture2D( u_depth, uv ).r;
-	if( depth > 0.0 && camDistance > depth ) {
+	// if( depth > 0.0 && camDistance > depth ) {
+	// 	discard;
+	// }
+	if( camDistance > depth && depth > 0.0 ) {
 		discard;
 	}
 
@@ -29,7 +32,7 @@ void main(void) {
 	gl_FragData[0] = sqrt(vec4( lambertTerm * 0.2 * (length(testColor.rgb)) * normalize(testColor.rgb), 1.0));
 	// gl_FragData[0] = vec4(0.00001 * testColor.r, 0.0, 0.2, 1.0);
 	// gl_FragData[0] = vec4(testColor.r, 0.0, 0.2, 1.0);
-	vec4 result = vec4(lambertTerm * mix(vec3(0.1, 0.3, 0.4), vec3(1.0), length(testColor.rgb) * length(testColor.rgb) / 40.0), 1.0);
+	// vec4 result = vec4(lambertTerm * mix(vec3(0.1, 0.3, 0.4), vec3(1.0), length(testColor.rgb) * length(testColor.rgb) / 40.0), 1.0);
 	// gl_FragData[0] = result;
  } 
 

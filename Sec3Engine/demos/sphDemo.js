@@ -35,6 +35,9 @@ var demo = (function () {
         demo.modelMatrix = mat4.create();
         mat4.translate( demo.modelMatrix, demo.modelMatrix, demo.spherePosition);
     }
+
+    demo.drawnOnce = false
+
     return demo;
 
 })();
@@ -119,9 +122,9 @@ var myRender = function() {
     }
 
     // gl.clearColor( 0.4, 0.4, 0.4, 1.0);
-    gl.enable( gl.DEPTH_TEST )
-    gl.depthFunc(gl.LESS);
-    
+    // gl.enable( gl.DEPTH_TEST )
+    // gl.depthFunc(gl.LESS);
+
     SEC3.renderer.updateShadowMaps(scene);
 
     // fill g buffer with all scene geometry besides particles
@@ -153,10 +156,24 @@ var myRender = function() {
     }
     //otherwise draw particles
     else {
-        // sph.draw( scene, finalFBO);
+        if (!demo.drawnOnce) {
+            sph.draw( scene, finalFBO);
+        }
+        // demo.drawnOnce = true
     }
+    // SEC3.postFx.blendAdditive(particleFBO.texture(0), 1.0,
+    //                           finalFBO.texture(0), 1.0, 
+    //                           fbo, scene.gBuffer.depthTexture() );
+    // particleFBO.bind(gl)
+    // gl.clearColor(0.0, 0.0, 0.0, 0.0)
+    // gl.clear(gl.COLOR_BUFFER_BIT)
+    // gl.clearColor(0.4,0.4,0.4,1.0)
+
+
     SEC3.postFx.finalPass( finalFBO.texture(0) );
-    
+    particleFBO.bind(gl)
+    gl.clearColor(0.0, 0.0, 0.0, 1.0)
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 };
 
 var main = function( canvasId, messageId ){
@@ -266,6 +283,13 @@ var initFBOs = function() {
         console.log( "lightFBO initialization failed.");
         return;
     }
+
+    particleFBO = SEC3.createFBO();
+    if (! particleFBO.initialize(gl, canvas.width, canvas.height)) {
+            console.log( "particleFBO initialization failed.");
+            return; 
+    }
+
 
     splattingFBO = SEC3.createFBO();
     if (! splattingFBO.initialize( gl, canvas.width, canvas.height )) {

@@ -97,9 +97,11 @@ SEC3.SPH.prototype = {
 		var width = framebuffer != null ? framebuffer.getWidth() : SEC3.canvas.width;
 		var height = framebuffer != null ? framebuffer.getWidth() : SEC3.canvas.height;
 	    gl.viewport(0, 0, width, height );
-	   
-	   	// gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
-	    gl.enable(gl.DEPTH_TEST);
+
+	    // gl.clearDepth(1.0)
+	   	// gl.clear( gl.DEPTH_BUFFER_BIT );
+	    // gl.disable(gl.DEPTH_TEST);
+	    // gl.depthFunc(gl.LESS)
 	    gl.disable(gl.BLEND);
 	    // gl.blendFunc( gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA );
 		gl.useProgram(this.renderProgram.ref());
@@ -146,6 +148,7 @@ SEC3.SPH.prototype = {
         // gl.drawElements( gl.TRIANGLES, model_indexVBOs[i].numIndex, gl.UNSIGNED_SHORT, 0 );
 		// gl.drawArrays( gl.POINTS, 0, 1000);//this.numParticles );
 
+		this.ext.vertexAttribDivisorANGLE(this.renderProgram.aIndexLoc, 0);
         gl.bindBuffer( gl.ARRAY_BUFFER, null );
         gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, null );    
 
@@ -160,8 +163,8 @@ SEC3.SPH.prototype = {
 	    var objLoader = SEC3.createOBJLoader(scene);
 	    sph = this
 	    
-	    // objLoader.loadFromFile( gl, 'Sec3Engine/models/sphere/sphere2.obj', 'Sec3Engine/models/sphere/sphere.mtl');
-	    objLoader.loadFromFile(gl, 'Sec3Engine/models/quads/sphereQuad.obj', 'Sec3Engine/models/quads/sphereQuad.mtl')
+	    objLoader.loadFromFile( gl, 'Sec3Engine/models/sphere/sphere2.obj', 'Sec3Engine/models/sphere/sphere.mtl');
+	    // objLoader.loadFromFile(gl, 'Sec3Engine/models/quads/sphereQuad.obj', 'Sec3Engine/models/quads/sphereQuad.mtl')
 	    // objLoader.loadFromFile( gl, 'Sec3Engine/models/thickPlane/terrain4.obj', 'Sec3Engine/models/thickPlane/terrain4.mtl');
 	    // objLoader.loadFromFile( gl, 'Sec3Engine/models/alien/decimated5.obj', 'Sec3Engine/models/alien/decimated5.mtl');
 	    // objLoader.loadFromFile( gl, 'Sec3Engine/models/Shark/Shark.obj', 'Sec3Engine/models/Shark/Shark.mtl');
