@@ -5,7 +5,7 @@ precision highp float;
 #define DISPLAY_COLOR 2
 #define DISPLAY_DEPTH 3
 #define BIAS 0.002
-#define LIGHT_INTENSITY 40.0
+#define LIGHT_INTENSITY 75.0
 //--------------------------------------------------------------VARIABLES:
 
 uniform sampler2D u_positionTex;

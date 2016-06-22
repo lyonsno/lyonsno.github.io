@@ -22,7 +22,6 @@ SEC3.createOBJLoader = function( s ){
 
     function initTexture( gl, url, index ){
         textures[index] = gl.createTexture();
-
         textures[index].image = new Image();
         textures[index].image.onload = function(){
             loadTexture( gl, textures[index] );
@@ -199,7 +198,7 @@ SEC3.createOBJLoader = function( s ){
             for( var i = 0; i < textures.length; ++i ){
                 if( textures[i] !== null && !textures[i].ready ){
 
-                    if( textures[i].map.image.src.length > 0){
+                    if( true || textures[i].map.image.src.length > 0){
                         // console.log( textures[i].map.image.src );
                         loadTexture( gl, textures[i] );
                         isReady &= textures[i].ready;

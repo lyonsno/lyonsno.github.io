@@ -36,9 +36,6 @@ var demo = (function () {
         demo.modelMatrix = mat4.create();
         mat4.translate( demo.modelMatrix, demo.modelMatrix, demo.spherePosition);
     }
-
-    demo.drawnOnce = false
-
     return demo;
 
 })();
@@ -158,23 +155,14 @@ var myRender = function() {
     }
     //otherwise draw particles
     else {
-        if (!demo.drawnOnce) {
-            sph.draw( scene);
-        }
-        // demo.drawnOnce = true
+        sph.draw( scene);
     }
-    // SEC3.postFx.blendAdditive(particleFBO.texture(0), 1.0,
-    //                           finalFBO.texture(0), 1.0, 
-    //                           fbo, scene.gBuffer.depthTexture() );
-    // particleFBO.bind(gl)
-    // gl.clearColor(0.0, 0.0, 0.0, 0.0)
-    // gl.clear(gl.COLOR_BUFFER_BIT)
-    // gl.clearColor(0.4,0.4,0.4,1.0)
-
-
-    finalFBO.bind(gl)
+    // gl.bindFrameBuffer(gl.FRAMEBUFFER, scene.gBuffer)
+    // gl.bindFramebuffer( gl.FRAMEBUFFER, scene.gBuffer );
+    scene.gBuffer.bind(gl)
     gl.clearColor(0.0, 0.0, 0.0, 1.0)
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+    gl.clear(gl.COLOR_BUFFER_BIT)
+    // scene.gBuffer.unBind(gl)    
 };
 
 var main = function( canvasId, messageId ){
@@ -207,10 +195,10 @@ var setupScene = function(){
 
 var initLight = function() {
     var nextLight = new SEC3.SpotLight();
-    nextLight.goHome ( [ 5.0, 5.0, 8.0] ); 
-    // nextLight.setAzimuth( 45.0 );    
-    nextLight.setElevation( -30.0 );
-    nextLight.setPerspective( 60, 1, 0.2, 20.0 );
+    nextLight.goHome ( [ -4.0, 10.0, 6.0] ); 
+    nextLight.setAzimuth( -60.0 );    
+    nextLight.setElevation( -40.0 );
+    nextLight.setPerspective( 40, 1, 0.2, 20.0 );
     nextLight.setupCascades( 1, 1024, gl, scene );
     scene.addLight(nextLight);
 }
@@ -412,7 +400,8 @@ var loadObjects = function() {
     // objLoader.loadFromFile( gl, 'Sec3Engine/models/thickPlane/terrain4.obj', 'Sec3Engine/models/thickPlane/terrain4.mtl');
     // objLoader.loadFromFile( gl, 'Sec3Engine/models/alien/decimated5.obj', 'Sec3Engine/models/alien/decimated5.mtl');
     // objLoader.loadFromFile( gl, 'Sec3Engine/models/Shark/Shark.obj', 'Sec3Engine/models/Shark/Shark.mtl');
-    objLoader.loadFromFile( gl, 'Sec3Engine/models/bigSphere/concreteSphere.obj', 'Sec3Engine/models/bigSphere/concreteSphere.mtl');
+    // objLoader.loadFromFile( gl, 'Sec3Engine/models/bigSphere/concreteSphere.obj', 'Sec3Engine/models/bigSphere/concreteSphere.mtl');
+    objLoader.loadFromFile( gl, 'Sec3Engine/models/bigSphere/checkerSphere.obj', 'Sec3Engine/models/bigSphere/checkerSphere.mtl');    
     // objLoader.loadFromFile( gl, 'Sec3Engine/models/dabrovic-sponza/sponza3.obj', 'Sec3Engine/models/dabrovic-sponza/sponza.mtl');
     
         

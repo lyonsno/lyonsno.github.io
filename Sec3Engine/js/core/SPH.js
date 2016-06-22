@@ -98,12 +98,9 @@ SEC3.SPH.prototype = {
 		var height = framebuffer != null ? framebuffer.getWidth() : SEC3.canvas.height;
 	    gl.viewport(0, 0, width, height );
 
-	    // gl.clearDepth(1.0)
-	   	// gl.clear( gl.DEPTH_BUFFER_BIT );
 	    gl.enable(gl.DEPTH_TEST);
-	    // gl.depthFunc(gl.LESS)
 	    gl.disable(gl.BLEND);
-	    // gl.blendFunc( gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA );
+
 		gl.useProgram(this.renderProgram.ref());
 	    gl.activeTexture(gl.TEXTURE0);
 	    gl.bindTexture(gl.TEXTURE_2D, this.movementFBOs[this.srcIndex].texture(0));
@@ -111,7 +108,6 @@ SEC3.SPH.prototype = {
 
 	    gl.activeTexture(gl.TEXTURE1);
 	    gl.bindTexture(gl.TEXTURE_2D, this.movementFBOs[this.srcIndex].texture(1));
-	    // gl.bindTexture(gl.TEXTURE_2D, this.densityFBO.texture(0));
 	    gl.uniform1i( this.renderProgram.uTestTexLoc, 1 );
 
 	    gl.activeTexture(gl.TEXTURE2);
@@ -145,8 +141,6 @@ SEC3.SPH.prototype = {
 
         gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, this.model_indexVBOs[0] );
 		this.ext.drawElementsInstancedANGLE(gl.TRIANGLES, this.model_indexVBOs[0].numIndex, gl.UNSIGNED_SHORT, 0, this.numParticles);
-        // gl.drawElements( gl.TRIANGLES, model_indexVBOs[i].numIndex, gl.UNSIGNED_SHORT, 0 );
-		// gl.drawArrays( gl.POINTS, 0, 1000);//this.numParticles );
 
 		this.ext.vertexAttribDivisorANGLE(this.renderProgram.aIndexLoc, 0);
         gl.bindBuffer( gl.ARRAY_BUFFER, null );
