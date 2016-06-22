@@ -314,6 +314,7 @@ var initParticleSystem = function() {
          // numParticles : 30276,
         numParticles : 16384,
         RGBA : vec4.fromValues( 0.0, 0.0, 1.0, 1.0 ),
+        renderMode : "splatting",
         particleSize : 1.3,
         stepsPerFrame : 1.0,
         gravity : 9.8,
@@ -384,6 +385,7 @@ var initUI = function() {
     gui.add(sph, 'showGrid' ).name('Show voxel grid');
     gui.add(sph, 'pause' ).name('Pause');
     gui.add(sph, 'initFBOs' ).name('Restart');
+    gui.add(sph, 'renderMode').name('Render mode');
     // gui.add(demo, 'resetSphere').name('Reset Sphere');
 }
 

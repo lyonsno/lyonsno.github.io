@@ -20,6 +20,15 @@ SEC3.SPH = function(specs) {
 	this.model_texcoordVBOs = [];
 	this.model_normalVBOs = [];
 
+	this.MODEL_VBO = 0;
+	this.BILLBOARD_VBO = 1;
+	this.VBOS = [];
+
+	this.billBoard_indexVBOs = [];
+	this.billBoard_vertexVBOs = [];
+	this.billBoard_texcoordVBOs = [];
+	this.billBoard_normalVBOs = [];
+
 	this.viewDepth = false;
 	this.viewNormals = false;
 	this.viewGrid = false;
@@ -36,6 +45,7 @@ SEC3.SPH = function(specs) {
 
 	this.RGBA = specs.RGBA;	
 	this.particleSize = specs.particleSize;
+	this.renderMode = specs.renderMode;
 
 	this.stepsPerFrame = specs.stepsPerFrame;
 	this.h = specs.h;
@@ -101,107 +111,188 @@ SEC3.SPH.prototype = {
 	    gl.enable(gl.DEPTH_TEST);
 	    gl.disable(gl.BLEND);
 
-		gl.useProgram(this.renderProgram.ref());
-	    gl.activeTexture(gl.TEXTURE0);
-	    gl.bindTexture(gl.TEXTURE_2D, this.movementFBOs[this.srcIndex].texture(0));
-	    gl.uniform1i( this.renderProgram.uPositionsLoc, 0);
+	    var program;
+	    if (this.renderMode === "simple"){
+	    	var program = this.simpleRenderProgram;
+	    	var model = this.MODEL_VBO;
+	    }
 
-	    gl.activeTexture(gl.TEXTURE1);
-	    gl.bindTexture(gl.TEXTURE_2D, this.movementFBOs[this.srcIndex].texture(1));
-	    gl.uniform1i( this.renderProgram.uTestTexLoc, 1 );
+	    else if (this.renderMode === "splatting"){
+	    	var program = this.splattingRenderProgram;
+	    	var model = this.BILLBOARD_VBO;
+	    }
 
-	    gl.activeTexture(gl.TEXTURE2);
-	    gl.bindTexture(gl.TEXTURE_2D, scene.gBuffer.texture(3));
-	    gl.uniform1i( this.renderProgram.uDepthLoc, 2 );
-	   
-	   	gl.uniform2f( this.renderProgram.uScreenDimsLoc, SEC3.canvas.width, SEC3.canvas.height );
-	   	gl.uniform3fv( this.renderProgram.uCamPosLoc, scene.getCamera().getPosition() );
-	   	gl.uniform1f( this.renderProgram.uParticleSizeLoc, this.particleSize);
-	    gl.uniformMatrix4fv(this.renderProgram.uMVPLoc, false, scene.getCamera().getMVP());
-	    gl.uniformMatrix4fv( this.renderProgram.uCamViewLoc, false, scene.getCamera().getViewTransform())
-		
+		gl.useProgram(program.ref());
+	    
+	    this.setCommonUniforms(program);
+
+	    if (this.renderMode === "splatting"){
+	    	this.setSplattingUniforms(program);
+	    }
+
 	   	//TODO eliminate
-	    gl.bindBuffer(gl.ARRAY_BUFFER, this.renderProgram.indexBuffer);
-	    gl.enableVertexAttribArray(this.renderProgram.aIndexLoc); 
-	    gl.vertexAttribPointer(this.renderProgram.aIndexLoc, 2, gl.FLOAT, false, 0, 0); 
-	    this.ext.vertexAttribDivisorANGLE(this.renderProgram.aIndexLoc, 1);
+	    gl.bindBuffer(gl.ARRAY_BUFFER, program.indexBuffer);
+	    gl.enableVertexAttribArray(program.aIndexLoc); 
+	    gl.vertexAttribPointer(program.aIndexLoc, 2, gl.FLOAT, false, 0, 0); 
+	    this.ext.vertexAttribDivisorANGLE(program.aIndexLoc, 1);
 
 	    //----------------------------------------INSTANCE EXTENSION:
 
 		// Bind the rest of the vertex attributes normally
 		//----------------DRAW MODEL:
 
-        gl.bindBuffer( gl.ARRAY_BUFFER, this.model_vertexVBOs[0] );
-        gl.vertexAttribPointer( this.renderProgram.aGeometryVertsLoc, 3, gl.FLOAT, false, 0, 0 );
-        gl.enableVertexAttribArray( this.renderProgram.aGeometryVertsLoc );
+  //       gl.bindBuffer( gl.ARRAY_BUFFER, this.model_vertexVBOs[0] );
+  //       gl.vertexAttribPointer( program.aGeometryVertsLoc, 3, gl.FLOAT, false, 0, 0 );
+  //       gl.enableVertexAttribArray( program.aGeometryVertsLoc );
+
+  //        //Bind vertex normal buffer
+  //       gl.bindBuffer( gl.ARRAY_BUFFER, this.model_normalVBOs[0] );
+  //       gl.vertexAttribPointer( program.aGeometryNormalsLoc, 3, gl.FLOAT, false, 0, 0 );
+  //       gl.enableVertexAttribArray( program.aGeometryNormalsLoc );
+
+  //       gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, this.model_indexVBOs[0] );
+		// this.ext.drawElementsInstancedANGLE(gl.TRIANGLES, this.model_indexVBOs[0].numIndex, gl.UNSIGNED_SHORT, 0, this.numParticles);
+
+		// this.ext.vertexAttribDivisorANGLE(program.aIndexLoc, 0);
+  //       gl.bindBuffer( gl.ARRAY_BUFFER, null );
+  //       gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, null );    
+
+  		gl.bindBuffer( gl.ARRAY_BUFFER, this.VBOS[model].vertexVBOs[0] );
+        gl.vertexAttribPointer( program.aGeometryVertsLoc, 3, gl.FLOAT, false, 0, 0 );
+        gl.enableVertexAttribArray( program.aGeometryVertsLoc );
 
          //Bind vertex normal buffer
-        gl.bindBuffer( gl.ARRAY_BUFFER, this.model_normalVBOs[0] );
-        gl.vertexAttribPointer( this.renderProgram.aGeometryNormalsLoc, 3, gl.FLOAT, false, 0, 0 );
-        gl.enableVertexAttribArray( this.renderProgram.aGeometryNormalsLoc );
+        gl.bindBuffer( gl.ARRAY_BUFFER, this.VBOS[model].normalVBOs[0] );
+        gl.vertexAttribPointer( program.aGeometryNormalsLoc, 3, gl.FLOAT, false, 0, 0 );
+        gl.enableVertexAttribArray( program.aGeometryNormalsLoc );
 
-        gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, this.model_indexVBOs[0] );
-		this.ext.drawElementsInstancedANGLE(gl.TRIANGLES, this.model_indexVBOs[0].numIndex, gl.UNSIGNED_SHORT, 0, this.numParticles);
+        gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, this.VBOS[model].indexVBOs[0] );
+		this.ext.drawElementsInstancedANGLE(gl.TRIANGLES, this.VBOS[model].indexVBOs[0].numIndex, gl.UNSIGNED_SHORT, 0, this.numParticles);
 
-		this.ext.vertexAttribDivisorANGLE(this.renderProgram.aIndexLoc, 0);
+		this.ext.vertexAttribDivisorANGLE(program.aIndexLoc, 0);
         gl.bindBuffer( gl.ARRAY_BUFFER, null );
         gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, null );    
 
 
 	},
-		
-		/*
-	 * Loads objects from obj files into the model_VBOs
-	 */
-	loadObjects : function () {
-	    //Load a OBJ model from file
-	    var objLoader = SEC3.createOBJLoader(scene);
-	    sph = this
-	    
-	    // objLoader.loadFromFile( gl, 'Sec3Engine/models/sphere/sphere2.obj', 'Sec3Engine/models/sphere/sphere.mtl');
-	    objLoader.loadFromFile(gl, 'Sec3Engine/models/quads/sphereQuadFront.obj', 'Sec3Engine/models/quads/sphereQuadFront.mtl')
-	    // objLoader.loadFromFile( gl, 'Sec3Engine/models/thickPlane/terrain4.obj', 'Sec3Engine/models/thickPlane/terrain4.mtl');
-	    // objLoader.loadFromFile( gl, 'Sec3Engine/models/alien/decimated5.obj', 'Sec3Engine/models/alien/decimated5.mtl');
-	    // objLoader.loadFromFile( gl, 'Sec3Engine/models/Shark/Shark.obj', 'Sec3Engine/models/Shark/Shark.mtl');
-	    // objLoader.loadFromFile( gl, 'Sec3Engine/models/bigSphere/sphere.obj', 'Sec3Engine/models/bigSphere/sphere.mtl');
-	    
-	        
-	    //Register a callback function that extracts vertex and normal 
-	    //and put it in our VBO
-	    objLoader.addCallback( function(){
-	         
-	        //There might be multiple geometry groups in the model
+	
+	setCommonUniforms : function (program) {
+		gl.activeTexture(gl.TEXTURE0);
+	    gl.bindTexture(gl.TEXTURE_2D, this.movementFBOs[this.srcIndex].texture(0));
+	    gl.uniform1i( program.uPositionsLoc, 0);
+
+	    gl.activeTexture(gl.TEXTURE1);
+	    gl.bindTexture(gl.TEXTURE_2D, this.movementFBOs[this.srcIndex].texture(1));
+	    gl.uniform1i( program.uTestTexLoc, 1 );
+
+	    gl.activeTexture(gl.TEXTURE2);
+	    gl.bindTexture(gl.TEXTURE_2D, scene.gBuffer.texture(3));
+	    gl.uniform1i( program.uDepthLoc, 2 );
+	   
+	   	gl.uniform2f( program.uScreenDimsLoc, SEC3.canvas.width, SEC3.canvas.height );
+	   	gl.uniform3fv( program.uCamPosLoc, scene.getCamera().getPosition() );
+	   	gl.uniform1f( program.uParticleSizeLoc, this.particleSize);
+	    gl.uniformMatrix4fv(program.uMVPLoc, false, scene.getCamera().getMVP());
+	},
+
+	setSplattingUniforms : function (program) {
+		gl.uniformMatrix4fv( program.uCamViewLoc, false, scene.getCamera().getViewTransform())
+	},
+
+	createOBJLoadCallback : function (objectIndex, objLoader) {
+		sph = this;
+		return (function(){
+			//There might be multiple geometry groups in the model
+			sph.VBOS[objectIndex] = new SEC3.bufferObjectsWrapper();
 	        for (var i = 0; i < objLoader.numGroups(); ++i) {
 
-	            sph.model_vertexVBOs[i] = gl.createBuffer();
-	            gl.bindBuffer( gl.ARRAY_BUFFER, sph.model_vertexVBOs[i] );
+	            sph.VBOS[objectIndex].vertexVBOs[i] = gl.createBuffer();
+	            gl.bindBuffer( gl.ARRAY_BUFFER, sph.VBOS[objectIndex].vertexVBOs[i] );
 	            gl.bufferData( gl.ARRAY_BUFFER, new Float32Array( objLoader.vertices(i) ), gl.STATIC_DRAW );
 
-	            sph.model_normalVBOs[i] = gl.createBuffer();
-	            gl.bindBuffer( gl.ARRAY_BUFFER, sph.model_normalVBOs[i] );
+	            sph.VBOS[objectIndex].normalVBOs[i] = gl.createBuffer();
+	            gl.bindBuffer( gl.ARRAY_BUFFER, sph.VBOS[objectIndex].normalVBOs[i] );
 	            gl.bufferData( gl.ARRAY_BUFFER, new Float32Array( objLoader.normals(i) ), gl.STATIC_DRAW ); 
 
-	            sph.model_texcoordVBOs[i] = gl.createBuffer();
-	            gl.bindBuffer( gl.ARRAY_BUFFER, sph.model_texcoordVBOs[i] );
+	            sph.VBOS[objectIndex].texcoordVBOs[i] = gl.createBuffer();
+	            gl.bindBuffer( gl.ARRAY_BUFFER, sph.VBOS[objectIndex].texcoordVBOs[i] );
 	            gl.bufferData( gl.ARRAY_BUFFER, new Float32Array( objLoader.texcoords(i) ), gl.STATIC_DRAW ); 
 	            gl.bindBuffer( gl.ARRAY_BUFFER, null );
 
 	            if (objLoader.texture(i)) {
 
-	                sph.model_texcoordVBOs[i].texture = objLoader.texture(i);    
+	                sph.VBOS[objectIndex].texcoordVBOs[i].texture = objLoader.texture(i);    
 	            }
 	            
 
-	            sph.model_indexVBOs[i] = gl.createBuffer();
-	            gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, sph.model_indexVBOs[i] );
+	            sph.VBOS[objectIndex].indexVBOs[i] = gl.createBuffer();
+	            gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, sph.VBOS[objectIndex].indexVBOs[i] );
 	            gl.bufferData( gl.ELEMENT_ARRAY_BUFFER, new Uint16Array( objLoader.indices(i) ), gl.STATIC_DRAW );
-	            sph.model_indexVBOs[i].numIndex = objLoader.indices(i).length;
+	            sph.VBOS[objectIndex].indexVBOs[i].numIndex = objLoader.indices(i).length;
 
 	            gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, null );
 	        }
+		});
+	},
+		/*
+	 * Loads objects from obj files into the model_VBOs
+	 */
+	loadObjects : function () {
+	    //Load a OBJ model from file
+	    var simpleObjLoader = SEC3.createOBJLoader(scene);
+	    simpleObjLoader.loadFromFile( gl, 'Sec3Engine/models/sphere/sphere2.obj', 'Sec3Engine/models/sphere/sphere.mtl');
+
+	    //Register a callback function that extracts vertex and normal 
+	    //and put it in our VBO
+	    simpleObjLoader.addCallback( this.createOBJLoadCallback(this.MODEL_VBO, simpleObjLoader));
+	    SEC3.registerAsyncObj( gl, simpleObjLoader);
+
+	    var billBoardObjLoader = SEC3.createOBJLoader(scene);
+	    // billBoardObjLoader.loadFromFile( gl, 'Sec3Engine/models/sphere/sphere2.obj', 'Sec3Engine/models/sphere/sphere.mtl');
+	    billBoardObjLoader.loadFromFile( gl, 'Sec3Engine/models/quads/quad.obj', 'Sec3Engine/models/quads/quad.mtl');
+	    billBoardObjLoader.addCallback( this.createOBJLoadCallback(this.BILLBOARD_VBO, billBoardObjLoader));
+	    SEC3.registerAsyncObj( gl, billBoardObjLoader);
+
+	    // var billBoardObjLoader = SEC3.createOBJLoader(scene);
+	    // sph = this
+	    
+	    // billBoardObjLoader.loadFromFile(gl, 'Sec3Engine/models/quads/sphereQuadFront.obj', 'Sec3Engine/models/quads/sphereQuadFront.mtl')
+	    // //Register a callback function that extracts vertex and normal 
+	    // //and put it in our VBO
+	    // billBoardObjLoader.addCallback( function(){
+	         
+	    //     //There might be multiple geometry groups in the model
+	    //     for (var i = 0; i < billBoardObjLoader.numGroups(); ++i) {
+
+	    //         sph.billBoard_vertexVBOs[i] = gl.createBuffer();
+	    //         gl.bindBuffer( gl.ARRAY_BUFFER, sph.billBoard_vertexVBOs[i] );
+	    //         gl.bufferData( gl.ARRAY_BUFFER, new Float32Array( billBoardObjLoader.vertices(i) ), gl.STATIC_DRAW );
+
+	    //         sph.billBoard_normalVBOs[i] = gl.createBuffer();
+	    //         gl.bindBuffer( gl.ARRAY_BUFFER, sph.billBoard_normalVBOs[i] );
+	    //         gl.bufferData( gl.ARRAY_BUFFER, new Float32Array( billBoardObjLoader.normals(i) ), gl.STATIC_DRAW ); 
+
+	    //         sph.billBoard_texcoordVBOs[i] = gl.createBuffer();
+	    //         gl.bindBuffer( gl.ARRAY_BUFFER, sph.billBoard_texcoordVBOs[i] );
+	    //         gl.bufferData( gl.ARRAY_BUFFER, new Float32Array( billBoardObjLoader.texcoords(i) ), gl.STATIC_DRAW ); 
+	    //         gl.bindBuffer( gl.ARRAY_BUFFER, null );
+
+	    //         if (billBoardObjLoader.texture(i)) {
+
+	    //             sph.billBoard_texcoordVBOs[i].texture = billBoardObjLoader.texture(i);    
+	    //         }
+	            
+
+	    //         sph.billBoard_indexVBOs[i] = gl.createBuffer();
+	    //         gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, sph.billBoard_indexVBOs[i] );
+	    //         gl.bufferData( gl.ELEMENT_ARRAY_BUFFER, new Uint16Array( billBoardObjLoader.indices(i) ), gl.STATIC_DRAW );
+	    //         sph.billBoard_indexVBOs[i].numIndex = billBoardObjLoader.indices(i).length;
+
+	    //         gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, null );
+	    //     }
 	        
-	    });
-	    SEC3.registerAsyncObj( gl, objLoader );    
+	    // });
+	    // SEC3.registerAsyncObj( gl, billBoardObjLoader );     
 
 	},
 
@@ -778,33 +869,61 @@ SEC3.SPH.prototype = {
 		this.velocityProgram = velocityProgram;
 
 		//-------------------------------------------------RENDER:
-		var renderProgram = SEC3.createShaderProgram();
-		renderProgram.loadShader(gl, 
+		var simpleRenderProgram = SEC3.createShaderProgram();
+		simpleRenderProgram.loadShader(gl, 
 								 "Sec3Engine/shader/renderSPH.vert",
 								 "Sec3Engine/shader/renderSPH.frag");
-		renderProgram.addCallback( function() {
-	        renderProgram.aIndexLoc = gl.getAttribLocation(renderProgram.ref(), "a_index");
-	        renderProgram.aGeometryVertsLoc = gl.getAttribLocation(renderProgram.ref(), "a_GeometryVerts");
-	        renderProgram.aGeometryNormalsLoc = gl.getAttribLocation(renderProgram.ref(), "a_GeometryNormals");
+		simpleRenderProgram.addCallback( function() {
+	        simpleRenderProgram.aIndexLoc = gl.getAttribLocation(simpleRenderProgram.ref(), "a_index");
+	        simpleRenderProgram.aGeometryVertsLoc = gl.getAttribLocation(simpleRenderProgram.ref(), "a_GeometryVerts");
+	        simpleRenderProgram.aGeometryNormalsLoc = gl.getAttribLocation(simpleRenderProgram.ref(), "a_GeometryNormals");
 
-	        renderProgram.uCamPosLoc = gl.getUniformLocation(renderProgram.ref(), "u_camPos");
-	        renderProgram.uDepthLoc = gl.getUniformLocation(renderProgram.ref(), "u_depth");
+	        simpleRenderProgram.uCamPosLoc = gl.getUniformLocation(simpleRenderProgram.ref(), "u_camPos");
+	        simpleRenderProgram.uDepthLoc = gl.getUniformLocation(simpleRenderProgram.ref(), "u_depth");
 
-	        renderProgram.uScreenDimsLoc = gl.getUniformLocation( renderProgram.ref(), "u_screenDims");
-	        renderProgram.uParticleSizeLoc = gl.getUniformLocation(renderProgram.ref(), "u_particleSize");
-	        renderProgram.uMVPLoc = gl.getUniformLocation(renderProgram.ref(), "u_MVP");
-	        renderProgram.uCamViewLoc = gl.getUniformLocation(renderProgram.ref(), "u_cameraView");
-	        renderProgram.uPositionsLoc = gl.getUniformLocation(renderProgram.ref(), "u_positions");
-	        renderProgram.uTestTexLoc = gl.getUniformLocation(renderProgram.ref(), "u_testTex");	        
-	        gl.useProgram( renderProgram.ref() );
-			renderProgram.indexBuffer = SEC3.createBuffer(2, //item size
+	        simpleRenderProgram.uScreenDimsLoc = gl.getUniformLocation( simpleRenderProgram.ref(), "u_screenDims");
+	        simpleRenderProgram.uParticleSizeLoc = gl.getUniformLocation(simpleRenderProgram.ref(), "u_particleSize");
+	        simpleRenderProgram.uMVPLoc = gl.getUniformLocation(simpleRenderProgram.ref(), "u_MVP");
+	        simpleRenderProgram.uPositionsLoc = gl.getUniformLocation(simpleRenderProgram.ref(), "u_positions");
+	        simpleRenderProgram.uTestTexLoc = gl.getUniformLocation(simpleRenderProgram.ref(), "u_testTex");	        
+	        gl.useProgram( simpleRenderProgram.ref() );
+			simpleRenderProgram.indexBuffer = SEC3.createBuffer(2, //item size
 	                          self.numParticles, //num items
 	                          indices, //data
-	                          renderProgram.aIndexLoc); //location
+	                          simpleRenderProgram.aIndexLoc); //location
 
 	    } );
-		SEC3.registerAsyncObj( gl, renderProgram );
-		this.renderProgram = renderProgram;
+		SEC3.registerAsyncObj( gl, simpleRenderProgram );
+		this.simpleRenderProgram = simpleRenderProgram;
+
+		//-------------------------------------------------RENDER:
+		var splattingRenderProgram = SEC3.createShaderProgram();
+		splattingRenderProgram.loadShader(gl, 
+								 "Sec3Engine/shader/splatSPH.vert",
+								 "Sec3Engine/shader/splatSPH.frag");
+		splattingRenderProgram.addCallback( function() {
+	        splattingRenderProgram.aIndexLoc = gl.getAttribLocation(splattingRenderProgram.ref(), "a_index");
+	        splattingRenderProgram.aGeometryVertsLoc = gl.getAttribLocation(splattingRenderProgram.ref(), "a_GeometryVerts");
+	        splattingRenderProgram.aGeometryNormalsLoc = gl.getAttribLocation(splattingRenderProgram.ref(), "a_GeometryNormals");
+
+	        splattingRenderProgram.uCamPosLoc = gl.getUniformLocation(splattingRenderProgram.ref(), "u_camPos");
+	        splattingRenderProgram.uDepthLoc = gl.getUniformLocation(splattingRenderProgram.ref(), "u_depth");
+
+	        splattingRenderProgram.uScreenDimsLoc = gl.getUniformLocation( splattingRenderProgram.ref(), "u_screenDims");
+	        splattingRenderProgram.uParticleSizeLoc = gl.getUniformLocation(splattingRenderProgram.ref(), "u_particleSize");
+	        splattingRenderProgram.uMVPLoc = gl.getUniformLocation(splattingRenderProgram.ref(), "u_MVP");
+	        splattingRenderProgram.uCamViewLoc = gl.getUniformLocation(splattingRenderProgram.ref(), "u_cameraView");
+	        splattingRenderProgram.uPositionsLoc = gl.getUniformLocation(splattingRenderProgram.ref(), "u_positions");
+	        splattingRenderProgram.uTestTexLoc = gl.getUniformLocation(splattingRenderProgram.ref(), "u_testTex");	        
+	        gl.useProgram( splattingRenderProgram.ref() );
+			splattingRenderProgram.indexBuffer = SEC3.createBuffer(2, //item size
+	                          self.numParticles, //num items
+	                          indices, //data
+	                          splattingRenderProgram.aIndexLoc); //location
+
+	    } );
+		SEC3.registerAsyncObj( gl, splattingRenderProgram );
+		this.splattingRenderProgram = splattingRenderProgram;
 	},
 
 //--------------------------------------------------------------------------HELPERS:
