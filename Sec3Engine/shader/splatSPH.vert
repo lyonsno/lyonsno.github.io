@@ -13,6 +13,7 @@ uniform float u_particleSize;
 varying vec3 worldPosition;
 varying vec4 testColor;
 varying vec3 normal;
+varying vec2 spritePosition;
 
 void main(void) {
 	vec4 pos =  texture2D(u_positions, a_index).rgba;
@@ -22,6 +23,7 @@ void main(void) {
 	worldPosition += a_GeometryVerts.y * u_particleSize * cameraUp;	
 	worldPosition += a_GeometryVerts.x * u_particleSize * cameraRight;
 	normal = a_GeometryNormals;
+	spritePosition = a_GeometryVerts.xy + 0.5;
 	testColor = texture2D(u_testTex, a_index).rgba;
    	gl_Position = u_MVP * vec4(worldPosition, 1.0);
 }

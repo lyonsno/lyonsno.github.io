@@ -35,11 +35,14 @@ SEC3.SPH = function(specs) {
 	this.naive = false;
 	this.paused = false;
 	this.currentProjector = 1;
+
 	// this.textureResolution = SEC3.math.roundUpToPower( specs.numParticles, 2);
 	this.textureSideLength = Math.sqrt( specs.numParticles );
 	this.numParticles = specs.numParticles;
 	this.gridTextureWidth = specs.gridTextureWidth;
 	this.gridTextureHeight = specs.gridTextureHeight;
+	this.gBufferWidth = specs.gBufferWidth;
+	this.gBufferHeight = specs.gBufferHeight;
 
 	this.projectors = [];
 
@@ -120,14 +123,22 @@ SEC3.SPH.prototype = {
 	    else if (this.renderMode === "splatting"){
 	    	var program = this.splattingRenderProgram;
 	    	var model = this.BILLBOARD_VBO;
+	    	this.splattingFBO.bind(gl);
+	    }
+
+	    // point sprites
+	    else {
+	    	var program = this.pointSpriteRenderProgram;
+	    	var model = this.BILLBOARD_VBO;
 	    }
 
 		gl.useProgram(program.ref());
 	    
 	    this.setCommonUniforms(program);
 
-	    if (this.renderMode === "splatting"){
-	    	this.setSplattingUniforms(program);
+	    // we use billboards for all render modes besides simple
+	    if (this.renderMode != "simple"){
+	    	this.setBillBoardUniforms(program);
 	    }
 
 	   	//TODO eliminate
@@ -140,22 +151,6 @@ SEC3.SPH.prototype = {
 
 		// Bind the rest of the vertex attributes normally
 		//----------------DRAW MODEL:
-
-  //       gl.bindBuffer( gl.ARRAY_BUFFER, this.model_vertexVBOs[0] );
-  //       gl.vertexAttribPointer( program.aGeometryVertsLoc, 3, gl.FLOAT, false, 0, 0 );
-  //       gl.enableVertexAttribArray( program.aGeometryVertsLoc );
-
-  //        //Bind vertex normal buffer
-  //       gl.bindBuffer( gl.ARRAY_BUFFER, this.model_normalVBOs[0] );
-  //       gl.vertexAttribPointer( program.aGeometryNormalsLoc, 3, gl.FLOAT, false, 0, 0 );
-  //       gl.enableVertexAttribArray( program.aGeometryNormalsLoc );
-
-  //       gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, this.model_indexVBOs[0] );
-		// this.ext.drawElementsInstancedANGLE(gl.TRIANGLES, this.model_indexVBOs[0].numIndex, gl.UNSIGNED_SHORT, 0, this.numParticles);
-
-		// this.ext.vertexAttribDivisorANGLE(program.aIndexLoc, 0);
-  //       gl.bindBuffer( gl.ARRAY_BUFFER, null );
-  //       gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, null );    
 
   		gl.bindBuffer( gl.ARRAY_BUFFER, this.VBOS[model].vertexVBOs[0] );
         gl.vertexAttribPointer( program.aGeometryVertsLoc, 3, gl.FLOAT, false, 0, 0 );
@@ -171,7 +166,17 @@ SEC3.SPH.prototype = {
 
 		this.ext.vertexAttribDivisorANGLE(program.aIndexLoc, 0);
         gl.bindBuffer( gl.ARRAY_BUFFER, null );
-        gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, null );    
+        gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, null );
+
+        if(this.renderMode === "splatting"){
+
+        	SEC3.postFx.finalPass(this.splattingFBO.texture(1));
+        	gl.clearColor(0.0, 0.0, 0.0, 0.0);
+        	// gl.enable(gl.DEPTH_TEST);
+        	this.splattingFBO.bind(gl);
+        	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        	// gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        }
 
 
 	},
@@ -191,11 +196,12 @@ SEC3.SPH.prototype = {
 	   
 	   	gl.uniform2f( program.uScreenDimsLoc, SEC3.canvas.width, SEC3.canvas.height );
 	   	gl.uniform3fv( program.uCamPosLoc, scene.getCamera().getPosition() );
+	   	gl.uniform3fv( program.ulPosLoc, scene.getLight(0).getPosition() );
 	   	gl.uniform1f( program.uParticleSizeLoc, this.particleSize);
 	    gl.uniformMatrix4fv(program.uMVPLoc, false, scene.getCamera().getMVP());
 	},
 
-	setSplattingUniforms : function (program) {
+	setBillBoardUniforms : function (program) {
 		gl.uniformMatrix4fv( program.uCamViewLoc, false, scene.getCamera().getViewTransform())
 	},
 
@@ -736,7 +742,11 @@ SEC3.SPH.prototype = {
 		this.bucketFBO.initialize( gl, this.gridTextureWidth,
 								this.gridTextureHeight,
 								1 , [gridTex]);
-		// this.bucketFBO.addStencil(gl);
+
+		this.splattingFBO = SEC3.createFBO();
+		this.splattingFBO.initialize( gl, this.gBufferWidth,
+									  this.gBufferHeight,
+									  4);
 
 	},
 
@@ -880,6 +890,7 @@ SEC3.SPH.prototype = {
 
 	        simpleRenderProgram.uCamPosLoc = gl.getUniformLocation(simpleRenderProgram.ref(), "u_camPos");
 	        simpleRenderProgram.uDepthLoc = gl.getUniformLocation(simpleRenderProgram.ref(), "u_depth");
+	        simpleRenderProgram.ulPosLoc = gl.getUniformLocation(simpleRenderProgram.ref(), "u_lPos")	        
 
 	        simpleRenderProgram.uScreenDimsLoc = gl.getUniformLocation( simpleRenderProgram.ref(), "u_screenDims");
 	        simpleRenderProgram.uParticleSizeLoc = gl.getUniformLocation(simpleRenderProgram.ref(), "u_particleSize");
@@ -908,7 +919,7 @@ SEC3.SPH.prototype = {
 
 	        splattingRenderProgram.uCamPosLoc = gl.getUniformLocation(splattingRenderProgram.ref(), "u_camPos");
 	        splattingRenderProgram.uDepthLoc = gl.getUniformLocation(splattingRenderProgram.ref(), "u_depth");
-
+	        splattingRenderProgram.ulPosLoc = gl.getUniformLocation(splattingRenderProgram.ref(), "u_lPos")
 	        splattingRenderProgram.uScreenDimsLoc = gl.getUniformLocation( splattingRenderProgram.ref(), "u_screenDims");
 	        splattingRenderProgram.uParticleSizeLoc = gl.getUniformLocation(splattingRenderProgram.ref(), "u_particleSize");
 	        splattingRenderProgram.uMVPLoc = gl.getUniformLocation(splattingRenderProgram.ref(), "u_MVP");
@@ -924,6 +935,36 @@ SEC3.SPH.prototype = {
 	    } );
 		SEC3.registerAsyncObj( gl, splattingRenderProgram );
 		this.splattingRenderProgram = splattingRenderProgram;
+
+		//-------------------------------------------------RENDER:
+		var pointSpriteRenderProgram = SEC3.createShaderProgram();
+		pointSpriteRenderProgram.loadShader(gl, 
+								 "Sec3Engine/shader/pointSpriteSPH.vert",
+								 "Sec3Engine/shader/pointSpriteSPH.frag");
+		pointSpriteRenderProgram.addCallback( function() {
+	        pointSpriteRenderProgram.aIndexLoc = gl.getAttribLocation(pointSpriteRenderProgram.ref(), "a_index");
+	        pointSpriteRenderProgram.aGeometryVertsLoc = gl.getAttribLocation(pointSpriteRenderProgram.ref(), "a_GeometryVerts");
+	        pointSpriteRenderProgram.aGeometryNormalsLoc = gl.getAttribLocation(pointSpriteRenderProgram.ref(), "a_GeometryNormals");
+
+	        pointSpriteRenderProgram.uCamPosLoc = gl.getUniformLocation(pointSpriteRenderProgram.ref(), "u_camPos");
+	        pointSpriteRenderProgram.uDepthLoc = gl.getUniformLocation(pointSpriteRenderProgram.ref(), "u_depth");
+   	        pointSpriteRenderProgram.ulPosLoc = gl.getUniformLocation(pointSpriteRenderProgram.ref(), "u_lPos")
+
+	        pointSpriteRenderProgram.uScreenDimsLoc = gl.getUniformLocation( pointSpriteRenderProgram.ref(), "u_screenDims");
+	        pointSpriteRenderProgram.uParticleSizeLoc = gl.getUniformLocation(pointSpriteRenderProgram.ref(), "u_particleSize");
+	        pointSpriteRenderProgram.uMVPLoc = gl.getUniformLocation(pointSpriteRenderProgram.ref(), "u_MVP");
+	        pointSpriteRenderProgram.uCamViewLoc = gl.getUniformLocation(pointSpriteRenderProgram.ref(), "u_cameraView");
+	        pointSpriteRenderProgram.uPositionsLoc = gl.getUniformLocation(pointSpriteRenderProgram.ref(), "u_positions");
+	        pointSpriteRenderProgram.uTestTexLoc = gl.getUniformLocation(pointSpriteRenderProgram.ref(), "u_testTex");	        
+	        gl.useProgram( pointSpriteRenderProgram.ref() );
+			pointSpriteRenderProgram.indexBuffer = SEC3.createBuffer(2, //item size
+	                          self.numParticles, //num items
+	                          indices, //data
+	                          pointSpriteRenderProgram.aIndexLoc); //location
+
+	    } );
+		SEC3.registerAsyncObj( gl, pointSpriteRenderProgram );
+		this.pointSpriteRenderProgram = pointSpriteRenderProgram;
 	},
 
 //--------------------------------------------------------------------------HELPERS:
