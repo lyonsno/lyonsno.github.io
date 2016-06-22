@@ -118,7 +118,8 @@ SEC3.SPH.prototype = {
 	   	gl.uniform3fv( this.renderProgram.uCamPosLoc, scene.getCamera().getPosition() );
 	   	gl.uniform1f( this.renderProgram.uParticleSizeLoc, this.particleSize);
 	    gl.uniformMatrix4fv(this.renderProgram.uMVPLoc, false, scene.getCamera().getMVP());
-
+	    gl.uniformMatrix4fv( this.renderProgram.uCamViewLoc, false, scene.getCamera().getViewTransform())
+		
 	   	//TODO eliminate
 	    gl.bindBuffer(gl.ARRAY_BUFFER, this.renderProgram.indexBuffer);
 	    gl.enableVertexAttribArray(this.renderProgram.aIndexLoc); 
@@ -157,8 +158,8 @@ SEC3.SPH.prototype = {
 	    var objLoader = SEC3.createOBJLoader(scene);
 	    sph = this
 	    
-	    objLoader.loadFromFile( gl, 'Sec3Engine/models/sphere/sphere2.obj', 'Sec3Engine/models/sphere/sphere.mtl');
-	    // objLoader.loadFromFile(gl, 'Sec3Engine/models/quads/sphereQuad.obj', 'Sec3Engine/models/quads/sphereQuad.mtl')
+	    // objLoader.loadFromFile( gl, 'Sec3Engine/models/sphere/sphere2.obj', 'Sec3Engine/models/sphere/sphere.mtl');
+	    objLoader.loadFromFile(gl, 'Sec3Engine/models/quads/sphereQuadFront.obj', 'Sec3Engine/models/quads/sphereQuadFront.mtl')
 	    // objLoader.loadFromFile( gl, 'Sec3Engine/models/thickPlane/terrain4.obj', 'Sec3Engine/models/thickPlane/terrain4.mtl');
 	    // objLoader.loadFromFile( gl, 'Sec3Engine/models/alien/decimated5.obj', 'Sec3Engine/models/alien/decimated5.mtl');
 	    // objLoader.loadFromFile( gl, 'Sec3Engine/models/Shark/Shark.obj', 'Sec3Engine/models/Shark/Shark.mtl');
@@ -792,6 +793,7 @@ SEC3.SPH.prototype = {
 	        renderProgram.uScreenDimsLoc = gl.getUniformLocation( renderProgram.ref(), "u_screenDims");
 	        renderProgram.uParticleSizeLoc = gl.getUniformLocation(renderProgram.ref(), "u_particleSize");
 	        renderProgram.uMVPLoc = gl.getUniformLocation(renderProgram.ref(), "u_MVP");
+	        renderProgram.uCamViewLoc = gl.getUniformLocation(renderProgram.ref(), "u_cameraView");
 	        renderProgram.uPositionsLoc = gl.getUniformLocation(renderProgram.ref(), "u_positions");
 	        renderProgram.uTestTexLoc = gl.getUniformLocation(renderProgram.ref(), "u_testTex");	        
 	        gl.useProgram( renderProgram.ref() );

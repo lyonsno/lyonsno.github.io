@@ -65,6 +65,11 @@ SEC3.Projector.prototype.dolly = function(s){
     this.steps = s;
 };
 
+SEC3.Projector.prototype.getViewMatrix = function(){
+    var m = mat4.create(this.matrix);
+    return m
+};
+
 SEC3.Projector.prototype.getViewTransform = function(){
     var m = mat4.create();
     mat4.invert( m, this.matrix );
