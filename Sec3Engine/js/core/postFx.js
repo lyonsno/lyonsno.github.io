@@ -219,17 +219,19 @@ SEC3.postFx.finalPass = function(texture, framebuffer){
     else {
         gl.viewport( 0, 0, SEC3.canvas.width, SEC3.canvas.height );
     }
-    gl.clear(gl.COLOR_BUFFER_BIT);
+    // gl.clear(gl.COLOR_BUFFER_BIT);
 
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.uniform1i(SEC3.postFx.backBufferWriteProg.uFinalImageLoc, 0);
 
     gl.disable( gl.DEPTH_TEST );
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); 
+    gl.enable(gl.BLEND);
+
     SEC3.renderer.bindQuadBuffers(SEC3.postFx.backBufferWriteProg);
 
     gl.drawElements( gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0 );
-
 
     gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, null );
     gl.bindBuffer( gl.ARRAY_BUFFER, null );
