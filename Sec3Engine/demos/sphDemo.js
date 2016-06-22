@@ -111,17 +111,6 @@ var myRender = function() {
     if(SEC3.isWaiting){
         return;
     }
-    // populate collision buffers
-    gl.enable( gl.CULL_FACE );
-    gl.cullFace( gl.BACK );
-    gl.frontFace( gl.CCW );
-    for( var i = 0; i < sph.projectors.length; i++ ){
-        SEC3.renderer.fillGPass( sph.projectors[i].gBuffer, sph.projectors[i] );
-    }
-
-    // gl.clearColor( 0.4, 0.4, 0.4, 1.0);
-    // gl.enable( gl.DEPTH_TEST )
-    // gl.depthFunc(gl.LESS);
 
     SEC3.renderer.updateShadowMaps(scene);
 
@@ -131,9 +120,18 @@ var myRender = function() {
     // deffered render from scene's gBuffer
     SEC3.renderer.deferredRender( scene, scene.gBuffer );
 
+    // gl.clearColor( 0.4, 0.4, 0.4, 1.0);
     // render all scene geometry besides particles
     SEC3.postFx.finalPass( finalFBO.texture(0) );
 
+
+    // populate collision buffers
+    gl.enable( gl.CULL_FACE );
+    gl.cullFace( gl.BACK );
+    gl.frontFace( gl.CCW );
+    for( var i = 0; i < sph.projectors.length; i++ ){
+        SEC3.renderer.fillGPass( sph.projectors[i].gBuffer, sph.projectors[i] );
+    }
     // step simulation
     if( ! sph.paused ) {
         sph.updateBuckets();
@@ -157,12 +155,9 @@ var myRender = function() {
     else {
         sph.draw( scene);
     }
-    // gl.bindFrameBuffer(gl.FRAMEBUFFER, scene.gBuffer)
-    // gl.bindFramebuffer( gl.FRAMEBUFFER, scene.gBuffer );
-    scene.gBuffer.bind(gl)
-    gl.clearColor(0.0, 0.0, 0.0, 1.0)
-    gl.clear(gl.COLOR_BUFFER_BIT)
-    // scene.gBuffer.unBind(gl)    
+
+
+
 };
 
 var main = function( canvasId, messageId ){
@@ -230,11 +225,11 @@ var initFBOs = function() {
     gBuffer.initialize( gl, SEC3.canvas.width, SEC3.canvas.height );
     scene.gBuffer = gBuffer;
 
-     fbo = SEC3.createFBO();
-    if (! fbo.initialize( gl, canvas.width, canvas.height )) {
-        console.log( "FBO initialization failed.");
-        return;
-    }
+    //  fbo = SEC3.createFBO();
+    // if (! fbo.initialize( gl, canvas.width, canvas.height )) {
+    //     console.log( "FBO initialization failed.");
+    //     return;
+    // }
 
     lowResFBO = SEC3.createFBO();
     if (! lowResFBO.initialize( gl, 512.0, 512.0 )) {

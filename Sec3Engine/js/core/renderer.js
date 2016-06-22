@@ -114,7 +114,7 @@ SEC3.renderer.fillGPass = function( framebuffer, camera ) {
     framebuffer.bind(gl);
     gl.viewport( 0, 0, framebuffer.getWidth(), framebuffer.getHeight() );
     gl.enable( gl.DEPTH_TEST );
-    // gl.clearColor( 0.0, 0.0, 0.0, 1.0 );
+    gl.clearColor( 0.0, 0.0, 0.0, 1.0 );
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
 
      //update the model-view matrix
@@ -286,6 +286,7 @@ SEC3.renderer.deferredRender = function(scene, gBuffer) {
 
     lightFBO.bind(gl);
     gl.viewport( 0, 0, lightFBO.getWidth(), lightFBO.getHeight() );
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
     gl.disable( gl.DEPTH_TEST );
     gl.enable( gl.BLEND );
@@ -297,7 +298,6 @@ SEC3.renderer.deferredRender = function(scene, gBuffer) {
     }
     gl.disable( gl.BLEND );
   
-
     SEC3.postFx.blendAdditive(gBuffer.texture(2), demo.AMBIENT_INTENSITY,
                   lightFBO.texture(0), 1.0, 
                   finalFBO, gBuffer.depthTexture() );
