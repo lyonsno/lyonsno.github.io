@@ -30,6 +30,7 @@ var demo = (function () {
     demo.spherePosition = vec3.fromValues(2.6,2,2);
     demo.modelMatrix = mat4.create();
     mat4.translate( demo.modelMatrix, demo.modelMatrix, demo.spherePosition);
+    mat4.scale(demo.modelMatrix, demo.modelMatrix, [1.8, 1.8, 1.8]);
     demo.resetSphere = function() {
         demo.spherePosition = vec3.fromValues(0,0,1);
         demo.modelMatrix = mat4.create();
@@ -134,6 +135,7 @@ var myRender = function() {
     SEC3.renderer.deferredRender( scene, scene.gBuffer );
 
     // render all scene geometry besides particles
+    SEC3.postFx.finalPass( finalFBO.texture(0) );
 
     // step simulation
     if( ! sph.paused ) {
@@ -157,7 +159,7 @@ var myRender = function() {
     //otherwise draw particles
     else {
         if (!demo.drawnOnce) {
-            sph.draw( scene, finalFBO);
+            sph.draw( scene);
         }
         // demo.drawnOnce = true
     }
@@ -170,8 +172,7 @@ var myRender = function() {
     // gl.clearColor(0.4,0.4,0.4,1.0)
 
 
-    SEC3.postFx.finalPass( finalFBO.texture(0) );
-    particleFBO.bind(gl)
+    finalFBO.bind(gl)
     gl.clearColor(0.0, 0.0, 0.0, 1.0)
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 };

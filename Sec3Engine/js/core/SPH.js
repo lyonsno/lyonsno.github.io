@@ -100,7 +100,7 @@ SEC3.SPH.prototype = {
 
 	    // gl.clearDepth(1.0)
 	   	// gl.clear( gl.DEPTH_BUFFER_BIT );
-	    // gl.disable(gl.DEPTH_TEST);
+	    gl.enable(gl.DEPTH_TEST);
 	    // gl.depthFunc(gl.LESS)
 	    gl.disable(gl.BLEND);
 	    // gl.blendFunc( gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA );
