@@ -11,10 +11,20 @@ varying vec2 spritePosition;
 
 const float radius = 0.5;
 
+float linearizeDepth( float exp_depth) {
+	
+	return ( 2.0 * 0.6 ) / ( 30.0 + 0.6 - exp_depth * ( 30.0 - 0.6 ) );
+}
+
+float getExpDepth(float linearDepth) {
+	return (0.02 * (51.0 * linearDepth - 2.0)) / linearDepth;
+}
+
 void main(void) {
 	// discard if outside sphere
 	vec2 spriteCenter = vec2(0.5, 0.5);
-	if( length( spriteCenter - spritePosition ) > radius) {
+	float distanceFromCenter = length(spriteCenter - spritePosition);
+	if( distanceFromCenter > radius) {
 		discard;
 	}
 
@@ -26,7 +36,9 @@ void main(void) {
     N = normalize(N);
 
 	//discard me if I am occluded by a scene object
-	float camDistance = length( worldPosition - u_camPos );
+	vec3 sphereWorldPosition = worldPosition;
+	sphereWorldPosition = sphereWorldPosition + N * distanceFromCenter;
+	float camDistance = length( sphereWorldPosition - u_camPos );
 	vec2 uv = gl_FragCoord.xy / u_screenDims;
 	float depth = texture2D( u_depth, uv ).r;
 
@@ -35,7 +47,7 @@ void main(void) {
 	}
 
 	// vec3 u_lPos = vec3( -10.0, 10.0, 10.0);
-	vec3 toLight = (u_lPos - worldPosition);
+	vec3 toLight = (u_lPos - sphereWorldPosition);
 	toLight = normalize(toLight);
 
 	float diffuse = max(0.0, dot(toLight, N));
@@ -52,9 +64,15 @@ void main(void) {
 	// gl_FragData[0] = vec4(testColor.r, 0.0, 0.2, 1.0);
 	// vec4 result = vec4(diffuse * falloff * mix(vec3(0.1, 0.3, 0.4), vec3(1.0), length(testColor.rgb) * length(testColor.rgb) / 30.0), 1.0);
 	// gl_FragData[0] = result;
-	gl_FragData[0] = vec4(worldPosition, 1.0);
+
+	float actualDepth = linearizeDepth( gl_FragCoord.z);
+	float writeDepth = getExpDepth(actualDepth);
+
+	gl_FragData[0] = vec4(sphereWorldPosition, 1.0);
 	gl_FragData[1] = vec4(N, 1.0);
 	gl_FragData[2] = vec4(diffuse * falloff * vec3(0.0,0.4,0.8), 1.0);
+	gl_FragData[3] = vec4(actualDepth, actualDepth, actualDepth, 1.0);
+	// gl_FragDepthEXT = gl_FragCoord.z;	
  } 
 
  

@@ -202,13 +202,13 @@ var initCamera = function() {
 
 	var canvas = SEC3.canvas;
 	var camera = new SEC3.Camera();
-    camera.goHome( [5.0, 5.0, 8.0] ); //initial camera posiiton
+    camera.goHome( [4.0, 9.0, 16.0] ); //initial camera posiiton
     // camera.setAzimuth( -30.0 );
-    camera.setElevation( -30.0 );
+    camera.setElevation( -24.0 );
     interactor = new SEC3.CameraInteractor( camera, canvas );
     interactor.setMouseCallback(moveSphere)
     // interactor.update();
-    camera.setPerspective( 60, canvas.width / canvas.height, 0.1, 30.0 );
+    camera.setPerspective( 30, canvas.width / canvas.height, 0.1, 30.0 );
     scene.setCamera(camera);
     SEC3.canvas = canvas;
 
@@ -378,7 +378,7 @@ var initUI = function() {
     gui.add(sph, 'showDepth' ).name('Show depth');
     gui.add(sph, 'showNormals' ).name('Show normal');
     gui.add(sph, 'showNextProjector').name('Show next projector');
-    gui.add(sph, 'particleSize', 0.1, 2.0 ).name('Size');
+    gui.add(sph, 'particleSize', 0.01, 1.4 ).name('Size');
     gui.add(sph, 'showGrid' ).name('Show voxel grid');
     gui.add(sph, 'pause' ).name('Pause');
     gui.add(sph, 'initFBOs' ).name('Restart');

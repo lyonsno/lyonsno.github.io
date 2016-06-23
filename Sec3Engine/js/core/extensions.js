@@ -39,3 +39,20 @@ SEC3.extensions.depthTexture = function(gl){
 	}
 	return SEC3.depthTextureExt;
 };
+
+SEC3.extensions.fragDepth = function(gl){
+	if (! SEC3.depthTextureExt) {
+		try {
+			SEC3.depthTextureExt = gl.getExtension("EXT_frag_depth");
+	        if(! SEC3.depthTextureExt){
+	            alert("sorry, frag depth not implemented for this browser");
+	        }
+	        return SEC3.depthTextureExt;
+	    }
+	    catch (e) {
+	    	alert("bad gl context given to extension manager");
+	    	return null;
+	    }
+	}
+	return SEC3.depthTextureExt;
+};

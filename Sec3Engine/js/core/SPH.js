@@ -65,6 +65,7 @@ SEC3.SPH = function(specs) {
 	this.grid = {};
 
 	this.ext = gl.getExtension("ANGLE_instanced_arrays"); // Vendor prefixes may apply!
+	this.fragDepthExt = gl.getExtension("EXT_frag_depth");
 	this.loadObjects();
 	this.initFBOs();
 	this.initShaders();
@@ -123,7 +124,7 @@ SEC3.SPH.prototype = {
 	    else if (this.renderMode === "splatting"){
 	    	var program = this.splattingRenderProgram;
 	    	var model = this.BILLBOARD_VBO;
-	    	this.splattingFBO.bind(gl);
+	    	this.gBuffer.bind(gl);
 	    }
 
 	    // point sprites
@@ -168,14 +169,21 @@ SEC3.SPH.prototype = {
         gl.bindBuffer( gl.ARRAY_BUFFER, null );
         gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, null );
 
+        //write splatting buffer to backbuffer and clear it
         if(this.renderMode === "splatting"){
+        	//for testing
+        	SEC3.postFx.blurGaussian(this.gBuffer.texture(1), this.blurBuffer, 6.0);
+        	SEC3.postFx.blurGaussian(this.gBuffer.texture(3), this.blurBuffer, 6.0);
 
-        	SEC3.postFx.finalPass(this.splattingFBO.texture(1));
-        	gl.clearColor(0.0, 0.0, 0.0, 0.0);
-        	// gl.enable(gl.DEPTH_TEST);
+        	SEC3.postFx.finalPass(this.blurBuffer.texture(0), this.splattingFBO)
+        	SEC3.postFx.finalPass(this.splattingFBO.texture(0));
+
+        	//clear splatting buffer
+        	gl.clearColor(0.0, 0.0, 0.0, 0.0);        	
         	this.splattingFBO.bind(gl);
         	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        	// gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        	this.gBuffer.bind(gl);
+        	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);	
         }
 
 
@@ -644,9 +652,9 @@ SEC3.SPH.prototype = {
 
     genGridTexture : function() {
 
-    	var xSpan = 49.0;
-    	var ySpan = 81.0;
-    	var zSpan = 25.0;
+    	var xSpan = 36.0;
+    	var ySpan = 36.0;
+    	var zSpan = 36.0;
     	var sqrtY = Math.sqrt(ySpan);
     	this.grid.xSpan = xSpan;
     	this.grid.ySpan = ySpan;
@@ -746,7 +754,17 @@ SEC3.SPH.prototype = {
 		this.splattingFBO = SEC3.createFBO();
 		this.splattingFBO.initialize( gl, this.gBufferWidth,
 									  this.gBufferHeight,
+									  1);
+
+		this.gBuffer = SEC3.createFBO();
+		this.gBuffer.initialize( gl, this.gBufferWidth,
+									  this.gBufferHeight,
 									  4);
+
+		this.blurBuffer = SEC3.createFBO();
+		this.blurBuffer.initialize( gl, this.gBufferWidth,
+									  this.gBufferHeight,
+									  2);
 
 	},
 
